@@ -23,7 +23,7 @@ $ mbed compile -m NUCLEO_F091RC -t GCC_ARM --profile=release
 
 Your PC may take a few minutes to compile your code. At the end, you see the following result:
 
-```
+```bash
 [Warning] @,: Compiler version mismatch: Have 9.2.1; expected version >= 6.0.0 and < 7.0.0
 Building project mbed-dht22-example (NUCLEO_F091RC, GCC_ARM)
 Scan: mbed-dht22-example
@@ -63,13 +63,50 @@ Image: ./BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-dht22-example.bin
 
 ### Program output
 
-```
+```bash
 $ minicom -b 115200 -D /dev/ttyACM3
 21.5
 21.5
 21.8
 22.6
 23.7
+```
+
+### Logging to a .csv file
+
+We can automate logging to a CSV file, and for example also add some other values such as CPU temperature.
+Include is a example script written in python that does exactly that, and takes samples each 5 minutes.
+Use the `usbtemp.py` script added to this repo, and copy it over to your target system:
+Make sure the target has **python 3** and that you have the *pyserial* library installed:
+
+```bash
+$ pip3 install pyserial
+```
+
+Execute the script:
+
+```bash
+$ python3 usbtemp.py /deb/ttyACM3
+Press Ctrl+C to quit
+Collecting data... (USB =  /dev/ttyACM0 )
+Creating log file:  temp.csv
+Log:  2020-06-17 11:35:24,24.3,48.0
+Zzz...
+Collecting data... (USB =  /dev/ttyACM0 )
+Log:  2020-06-17 11:35:34,24.3,48.0
+Zzz...
+```
+
+To stop the script from executing: press `ctrl+c`.
+On the target, in the folder where you executed the script, a CSV file is generated.
+
+File content:
+
+```csv
+TIMESTAMP,DHT22,CPU
+2020-06-17 11:35:24,24.3,48.0
+2020-06-17 11:35:34,24.3,48.0
+2020-06-17 11:35:44,24.3,48.0
 ```
 
 ### License and contributions
