@@ -83,7 +83,7 @@ Make sure the target has **python 3** and that you have the *pyserial* library i
 $ pip3 install pyserial
 ```
 
-Execute the script:
+Execute the python script:
 
 ```bash
 $ python3 usbtemp.py /deb/ttyACM3
@@ -97,7 +97,7 @@ Log:  2020-06-17 11:35:34,24.3,48.0
 Zzz...
 ```
 
-To stop the script from executing: press `ctrl+c`.
+To stop the python script from executing: press `ctrl+c`.
 On the target, in the folder where you executed the script, a CSV file is generated.
 
 File content:
@@ -107,6 +107,13 @@ TIMESTAMP,DHT22,CPU
 2020-06-17 11:35:24,24.3,48.0
 2020-06-17 11:35:34,24.3,48.0
 2020-06-17 11:35:44,24.3,48.0
+```
+
+Unortunaltey is you disconnect over SSH the python child process is terminated too.
+If you want to keep the python script running (as a background process) after you've exited your SSH session you should use `nohup`:
+
+```bash
+$ nohup python3 usbtemp.py /deb/ttyACM3 &
 ```
 
 ### License and contributions
