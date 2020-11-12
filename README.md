@@ -58,18 +58,21 @@ Image: ./BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-dht22-example.bin
 ### Program your board
 
 1. Connect your Mbed device to the computer over USB.
-1. Copy the binary file to the Mbed device.
-1. Press the reset button to start the program.
+2. Copy the binary file to the Mbed device.
+    ```
+    $ cp BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-dht22-example.bin /media/geoffrey/NODE_F091RC
+    ```
+3. Press the reset button to start the program.
 
 ### Program output
 
 ```bash
 $ minicom -b 115200 -D /dev/ttyACM3
-21.5
-21.5
-21.8
-22.6
-23.7
+21.5;45.3
+21.5;45.3
+21.8;45.4
+22.6;45.4
+23.7;45.3
 ```
 
 ### Logging to a .csv file

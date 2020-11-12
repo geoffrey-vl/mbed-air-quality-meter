@@ -3,14 +3,15 @@
 #include <vector>
 
 #define MAX_SAMPLE_COUNT        3
+#define ERROR_VALUE             -99
 
 DigitalOut led1(LED1);
 DigitalIn btn(USER_BUTTON);
 
 DHT dht(D8, DHT::DHT22);
 
-std::vector<float> buffer; //buffer to mean out the results
-
+std::vector<float> tempbuffer; //buffer to mean out the results
+std::vector<float> humbuffer; //buffer to mean out the results
 
 void waitAndBlink50ms(int loops)
 {
@@ -23,6 +24,39 @@ void waitAndBlink50ms(int loops)
     led1 = false;
 }
 
+void readSensor()
+{
+    int err = dht.read();
+    if (err == DHT::SUCCESS) 
+    {
+        // on success add sample to buffer and remove oldest sample if we have 3
+        tempbuffer.insert (tempbuffer.begin(), dht.getTemperature());
+        if(tempbuffer.size() >  MAX_SAMPLE_COUNT)
+            tempbuffer.pop_back();
+        humbuffer.insert (humbuffer.begin(), dht.getHumidity());
+        if(humbuffer.size() >  MAX_SAMPLE_COUNT)
+            humbuffer.pop_back();
+    } else {
+        //on error just pop older results
+        tempbuffer.pop_back();
+        humbuffer.pop_back();
+    }
+}
+
+float getMean(std::vector<float>& buffer)
+{
+    if(buffer.size() != MAX_SAMPLE_COUNT)
+        return ERROR_VALUE;
+
+    // iterate and calculate mean value
+    float total = 0;
+    for(unsigned i=0; i<buffer.size(); i++) {
+        total += buffer[i];
+    }
+    return total/buffer.size();
+    
+}
+
 
 int main()
 {
@@ -33,33 +67,14 @@ int main()
     {
         led1 = true; //illuminate LED while reading
 
-        int err = dht.read();
-        if (err == DHT::SUCCESS) 
-        {
-            // on succes add sample to buffer and remove oldest sample if we have 3
-            float sample = dht.getTemperature();
-            buffer.insert (buffer.begin(), sample);
-            if(buffer.size() >  MAX_SAMPLE_COUNT)
-                buffer.pop_back();
-        } else {
-            //on error just pop older results
-            buffer.pop_back();
-        }
+        readSensor();
 
-
-        if(buffer.size() > 0) 
-        {
-            // iterate and calculate mean value
-            float total = 0;
-            for(unsigned i=0; i<buffer.size(); i++) {
-                total += buffer[i];
-            }
-            float mean = total/buffer.size();
-            printf("%.1f\n", mean);
-        } else
-        {
+        float temp = getMean(tempbuffer);
+        float hum = getMean(humbuffer);
+        if(temp != ERROR_VALUE && hum != ERROR_VALUE)
+            printf("%.1f;%.1f\n", temp, hum);
+        else
             printf("ERR\n");
-        }
 
         //give LED some time to illuminate, and wait
         //3 seconds before taking next sample
