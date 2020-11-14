@@ -1,17 +1,35 @@
 #include "mbed.h"
 #include "DHT.h"
+#include "TextLCD.h"
 #include <vector>
+#include <string>
+#include <stdio.h>  //float-to-string
 
 #define MAX_SAMPLE_COUNT        3
 #define ERROR_VALUE             -99
+#define LCD_TIMEOUT_MS          5000 
+
+/**
+ * Note:
+ * the D0 and D1 pins are not available per default as 
+ * they are used by the STLink Virtual Comm Port
+ */ 
 
 DigitalOut led1(LED1);
 DigitalIn btn(USER_BUTTON);
 
 DHT dht(D8, DHT::DHT22);
 
-std::vector<float> tempbuffer; //buffer to mean out the results
-std::vector<float> humbuffer; //buffer to mean out the results
+// Sharp LM16A21 16x2 LCD, 5V - 4-bit parallel bus
+// note: wire VCC to 5V
+// note: wire R/W pin to GND (=write)
+// note: wire VO with a 10k pot between 5V and GND
+TextLCD lcd(D2, D3, D4, D5, D6, D7, TextLCD::LCD16x2);  //rs, e, d4-d7
+int lcdMillisOn;
+
+std::vector<float> tempbuffer; //buffer to mean out the temperature results
+std::vector<float> humbuffer;  //buffer to mean out the humidity results
+
 
 void waitAndBlink50ms(int loops)
 {
@@ -23,6 +41,7 @@ void waitAndBlink50ms(int loops)
     }
     led1 = false;
 }
+
 
 void readSensor()
 {
@@ -43,6 +62,7 @@ void readSensor()
     }
 }
 
+
 float getMean(std::vector<float>& buffer)
 {
     if(buffer.size() != MAX_SAMPLE_COUNT)
@@ -54,7 +74,84 @@ float getMean(std::vector<float>& buffer)
         total += buffer[i];
     }
     return total/buffer.size();
-    
+}
+
+
+std::string tostring(float val)
+{
+    int len = snprintf(NULL, 0, "%0.1f", val);
+    char *buff = (char *)malloc(len + 1);
+    snprintf(buff, len + 1, "%0.1f", val);
+    // do stuff with result
+    std::string result(buff);
+    free(buff);
+    return result;
+}
+
+
+void handleBtnOn() 
+{
+    if(lcdMillisOn != 0) {
+        lcd.setMode(TextLCD::LCDMode::DispOn);
+        lcdMillisOn = 0;
+    }
+}
+
+
+void handleBtnOff()
+{
+    if(lcdMillisOn < LCD_TIMEOUT_MS)
+        lcdMillisOn += 100;
+    else {
+        lcd.setMode(TextLCD::LCDMode::DispOff);
+    }
+}
+
+
+void waitAndHandleButton(int ms)
+{
+    for(int i=0; i<ms; i+=100) 
+    {
+        if(btn == 1) {
+            handleBtnOff();
+        } else {
+            handleBtnOn();
+        }
+        wait_ms(100); 
+    }
+}
+
+
+void loop()
+{
+    led1 = true; //illuminate LED while reading
+
+    lcd.cls();
+    readSensor();
+
+    float temp = getMean(tempbuffer);
+    float hum = getMean(humbuffer);
+    if(temp != ERROR_VALUE && hum != ERROR_VALUE) {
+        printf("%.1f;%.1f\n", temp, hum);
+        std::string lcdtxt = 
+            std::string("TEMP: ") +
+            tostring(temp) +
+            std::string(" gr.C\n HUM: ") +
+            tostring(hum) +
+            std::string(" pc");
+        
+        lcd.printf(lcdtxt.c_str());
+    }
+    else {
+        printf("ERR\n");
+        lcd.printf("Collecting...");
+    }
+
+    //give LED some time to illuminate, and wait
+    //3 seconds before taking next sample
+    wait_ms(50);
+    led1 = false;
+    waitAndHandleButton(3000);
 }
 
 
@@ -62,25 +159,13 @@ int main()
 {
     //give sensor 1 second to init
     waitAndBlink50ms(20);
+
+    lcd.setCursor(TextLCD::LCDCursor::CurOff_BlkOff);
+    lcdMillisOn = -5000; //normally is reset to 0, but at startup we want 5s additional time
     
     while (true) 
     {
-        led1 = true; //illuminate LED while reading
-
-        readSensor();
-
-        float temp = getMean(tempbuffer);
-        float hum = getMean(humbuffer);
-        if(temp != ERROR_VALUE && hum != ERROR_VALUE)
-            printf("%.1f;%.1f\n", temp, hum);
-        else
-            printf("ERR\n");
-
-        //give LED some time to illuminate, and wait
-        //3 seconds before taking next sample
-        wait_ms(50);
-        led1 = false;
-        wait_ms(3000);     
+        loop();
     }
     return 0;
 }
