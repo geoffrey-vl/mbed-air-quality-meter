@@ -1,6 +1,11 @@
-# Getting started with DHT22 on Mbed OS
+# Getting started with Air Quality Meter on Mbed OS
 
-This guide reviews the steps required to get samples from the DHT22 sensor on Mbed OS platform.
+This guide reviews the steps required to get samples from the Air Quality Sensor on Mbed OS platform.
+The device features:
+
+- mbed-os
+- DHT22 temperature and humidity sensor
+- 16x2 LCD
 
 Please install [mbed CLI](https://github.com/ARMmbed/mbed-cli#installing-mbed-cli).
 
@@ -9,13 +14,13 @@ Please install [mbed CLI](https://github.com/ARMmbed/mbed-cli#installing-mbed-cl
 From the command-line, import the example:
 
 ```bash
-$ mbed import git@github.com:geoffrey-vl/mbed-dht22-example.git
-$ cd mbed-dht22-example
+$ mbed import git@github.com:geoffrey-vl/mbed-air-quality-meter.git
+$ cd mbed-air-quality-meter
 ```
 
 ### Now compile
 
-Invoke `mbed compile`, and specify the name of your platform and your favorite toolchain (`GCC_ARM`, `ARM`, `IAR`). For example, for the ARM Compiler 5:
+Invoke `mbed compile`, and specify the name of your platform and your favorite toolchain (`GCC_ARM`, `ARM`, `IAR`). For example, for the GCC compiler:
 
 ```bash
 $ mbed compile -m NUCLEO_F091RC -t GCC_ARM --profile=release
@@ -25,10 +30,10 @@ Your PC may take a few minutes to compile your code. At the end, you see the fol
 
 ```bash
 [Warning] @,: Compiler version mismatch: Have 9.2.1; expected version >= 6.0.0 and < 7.0.0
-Building project mbed-dht22-example (NUCLEO_F091RC, GCC_ARM)
-Scan: mbed-dht22-example
-Link: mbed-dht22-example
-Elf2Bin: mbed-dht22-example
+Building project mbed-air-quality-meter (NUCLEO_F091RC, GCC_ARM)
+Scan: mbed-air-quality-meter
+Link: mbed-air-quality-meter
+Elf2Bin: mbed-air-quality-meter
 | Module           |     .text |    .data |     .bss |
 |------------------|-----------|----------|----------|
 | DHT.o            |   666(+0) |    0(+0) |    0(+0) |
@@ -48,7 +53,7 @@ Elf2Bin: mbed-dht22-example
 Total Static RAM memory (data + bss): 10776(+0) bytes
 Total Flash memory (text + data): 73440(+0) bytes
 
-Image: ./BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-dht22-example.bin
+Image: ./BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-air-quality-meter.bin
 ```
 
 ### Wirings
@@ -60,7 +65,7 @@ Image: ./BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-dht22-example.bin
 1. Connect your Mbed device to the computer over USB.
 2. Copy the binary file to the Mbed device.
     ```
-    $ cp BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-dht22-example.bin /media/geoffrey/NODE_F091RC
+    $ cp BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-air-quality-meter.bin /media/geoffrey/NODE_F091RC
     ```
 3. Press the reset button to start the program.
 
