@@ -4,10 +4,14 @@ This guide reviews the steps required to get samples from the Air Quality Sensor
 The device features:
 
 - mbed-os
+- STM32 Nucleo F091RC board
 - DHT22 temperature and humidity sensor
+- Sensirion SCD30 CO2 sensor
 - 16x2 LCD
 
 Please install [mbed CLI](https://github.com/ARMmbed/mbed-cli#installing-mbed-cli).
+
+![display output](doc/displayoutput.jpg)
 
 ## Import the example application
 
@@ -26,7 +30,7 @@ Invoke `mbed compile`, and specify the name of your platform and your favorite t
 $ mbed compile -m NUCLEO_F091RC -t GCC_ARM --profile=release
 ```
 
-Your PC may take a few minutes to compile your code. At the end, you see the following result:
+Your PC may take a few minutes to compile your code. At the end, you'll see the following result:
 
 ```bash
 [Warning] @,: Compiler version mismatch: Have 9.2.1; expected version >= 6.0.0 and < 7.0.0
@@ -34,29 +38,33 @@ Building project mbed-air-quality-meter (NUCLEO_F091RC, GCC_ARM)
 Scan: mbed-air-quality-meter
 Link: mbed-air-quality-meter
 Elf2Bin: mbed-air-quality-meter
-| Module           |     .text |    .data |     .bss |
-|------------------|-----------|----------|----------|
-| DHT.o            |   666(+0) |    0(+0) |    0(+0) |
-| [fill]           |    56(+0) |    8(+0) |   32(+0) |
-| [lib]/c.a        | 29088(+0) | 2472(+0) |   89(+0) |
-| [lib]/gcc.a      | 15288(+0) |    0(+0) |    0(+0) |
-| [lib]/misc       |   192(+0) |    4(+0) |   28(+0) |
-| [lib]/nosys.a    |    32(+0) |    0(+0) |    0(+0) |
-| [lib]/stdc++.a   |  4760(+0) |    8(+0) |   44(+0) |
-| main.o           |   534(+0) |    0(+0) |  116(+0) |
-| mbed-os/drivers  |   442(+0) |    0(+0) |    0(+0) |
-| mbed-os/hal      |  1264(+0) |    4(+0) |   66(+0) |
-| mbed-os/platform |  3428(+0) |  276(+0) |  388(+0) |
-| mbed-os/rtos     |  6418(+0) |  168(+0) | 5969(+0) |
-| mbed-os/targets  |  8328(+0) |    4(+0) | 1100(+0) |
-| Subtotals        | 70496(+0) | 2944(+0) | 7832(+0) |
-Total Static RAM memory (data + bss): 10776(+0) bytes
-Total Flash memory (text + data): 73440(+0) bytes
+| Module             |     .text |    .data |     .bss |
+|--------------------|-----------|----------|----------|
+| DHT.o              |   670(+0) |    0(+0) |    0(+0) |
+| TextLCD/TextLCD.o  |  4284(+0) |    0(+0) |    0(+0) |
+| [fill]             |    84(+0) |    8(+0) |   30(+0) |
+| [lib]/c.a          | 31752(+0) | 2472(+0) |   89(+0) |
+| [lib]/gcc.a        | 15664(+0) |    0(+0) |    0(+0) |
+| [lib]/misc         |   192(+0) |    4(+0) |   28(+0) |
+| [lib]/nosys.a      |    32(+0) |    0(+0) |    0(+0) |
+| [lib]/stdc++.a     |  6200(+0) |    8(+0) |   44(+0) |
+| main.o             |  1988(+0) |    0(+0) |  714(+0) |
+| mbed-os/drivers    |  1718(+0) |    0(+0) |   44(+0) |
+| mbed-os/hal        |  1324(+0) |    4(+0) |   66(+0) |
+| mbed-os/platform   |  4928(+0) |  276(+0) |  480(+0) |
+| mbed-os/rtos       |  6672(+0) |  168(+0) | 5969(+0) |
+| mbed-os/targets    | 12944(+0) |    4(+0) | 1120(+0) |
+| mbed-scd30/scd30.o |   900(+0) |    0(+0) |    0(+0) |
+| Subtotals          | 89352(+0) | 2944(+0) | 8584(+0) |
+Total Static RAM memory (data + bss): 11528(+0) bytes
+Total Flash memory (text + data): 92296(+0) bytes
 
 Image: ./BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-air-quality-meter.bin
 ```
 
 ### Wirings
+
+![display output](doc/wiring_scd30.jpg)
 
 ![wiring DHT22](doc/dht22_pinout.jpeg)
 
@@ -73,11 +81,11 @@ Image: ./BUILD/NUCLEO_F091RC/GCC_ARM-RELEASE/mbed-air-quality-meter.bin
 
 ```bash
 $ minicom -b 115200 -D /dev/ttyACM3
-21.5;45.3
-21.5;45.3
-21.8;45.4
-22.6;45.4
-23.7;45.3
+21.5;45.3;361.3
+21.5;45.3;361.3
+21.8;45.4;361.3
+22.6;45.4;361.3
+23.7;45.3;361.3
 ```
 
 ### Logging to a .csv file

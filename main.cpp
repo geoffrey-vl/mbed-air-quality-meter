@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <stdio.h>  //float-to-string
-#include "Adafruit_CCS811.h"
+#include "scd30.h"
 
 #define MAX_SAMPLE_COUNT        3
 #define ERROR_VALUE             -99
@@ -29,13 +29,13 @@ TextLCD lcd(D2, D3, D4, D5, D6, D7, TextLCD::LCD16x2);  //rs, e, d4-d7
 bool lcdIsOn;
 bool btnEventHandled;
 
-//CCS811 co2sens(D14, D15, CCS811_I2C_ADDR);
-Adafruit_CCS811 co2sensor(D14, D15);
+SCD30 co2sensor(D14, D15, 400000);
+
 
 std::vector<float> tempbuffer;     //buffer to mean out the temperature results
 std::vector<float> humbuffer;      //buffer to mean out the humidity results
-std::vector<uint16_t> co2buffer;   //buffer to mean out the eCO2 results
-std::vector<uint16_t> tvocbuffer;  //buffer to mean out the TVOC results
+std::vector<float> co2buffer;   //buffer to mean out the eCO2 results
+
 
 void waitAndBlink50ms(int loops)
 {
@@ -56,10 +56,13 @@ void readSensors()
 
     //read co2sensor
     uint8_t co2readOk = 0; //(ok)
-    if(co2sensor.available())
-        co2readOk = co2sensor.readData();
+    if(co2sensor.getReadyStatus() == SCD30::SCDnoERROR 
+        && co2sensor.scdSTR.ready == SCD30::SCDisReady) 
+    {
+        co2readOk = co2sensor.readMeasurement();
+    }
 
-    if (dhtReadOk == DHT::SUCCESS && co2readOk == 0) 
+    if (dhtReadOk == DHT::SUCCESS && co2readOk == SCD30::SCDnoERROR) 
     {
         // on success add sample to buffer and remove oldest sample if we have 3
         tempbuffer.insert (tempbuffer.begin(), dht.getTemperature());
@@ -68,19 +71,14 @@ void readSensors()
         humbuffer.insert (humbuffer.begin(), dht.getHumidity());
         if(humbuffer.size() >  MAX_SAMPLE_COUNT)
             humbuffer.pop_back();
-
-        co2buffer.insert (co2buffer.begin(), co2sensor.geteCO2());
+        co2buffer.insert (co2buffer.begin(), co2sensor.scdSTR.co2f);
         if(co2buffer.size() >  MAX_SAMPLE_COUNT)
             co2buffer.pop_back();
-        tvocbuffer.insert (tvocbuffer.begin(), co2sensor.getTVOC());
-        if(tvocbuffer.size() >  MAX_SAMPLE_COUNT)
-            tvocbuffer.pop_back();
     } else {
         //on error just pop older results
         tempbuffer.pop_back();
         humbuffer.pop_back();
         co2buffer.pop_back();
-        tvocbuffer.pop_back();
     }
 }
 
@@ -98,25 +96,12 @@ float getMean(std::vector<float>& buffer)
     return total/buffer.size();
 }
 
-uint16_t getMean(std::vector<uint16_t>& buffer)
+
+std::string fl2str(float val, const std::string& format="%0.1f")
 {
-    if(buffer.size() != MAX_SAMPLE_COUNT)
-        return ERROR_VALUE;
-
-    // iterate and calculate mean value
-    uint16_t total = 0;
-    for(unsigned i=0; i<buffer.size(); i++) {
-        total += buffer[i];
-    }
-    return total/buffer.size();
-}
-
-
-std::string tostring(float val)
-{
-    int len = snprintf(NULL, 0, "%0.1f", val);
+    int len = snprintf(NULL, 0, format.c_str(), val);
     char *buff = (char *)malloc(len + 1);
-    snprintf(buff, len + 1, "%0.1f", val);
+    snprintf(buff, len + 1, format.c_str(), val);
     // do stuff with result
     std::string result(buff);
     free(buff);
@@ -163,17 +148,17 @@ void loop()
     lcd.cls();
     float temp = getMean(tempbuffer);
     float hum = getMean(humbuffer);
-    uint16_t eco2 = getMean(co2buffer);
-    uint16_t tvoc = getMean(tvocbuffer);
+    float co2 = getMean(co2buffer);
     if(temp != ERROR_VALUE && hum != ERROR_VALUE) {
-        printf("%.1f;%.1f;%d;%d\n", temp, hum, eco2, tvoc);
+        printf("%.1f;%.1f;%.1f\n", temp, hum, co2);
         std::string lcdtxt = 
-            std::string("TEMP: ") +
-            tostring(temp) +
-            std::string(" gr.C\n") +
-            std::string("HUM: ") +
-            tostring(hum) +
-            std::string(" pc");
+            std::string("T:") +
+            fl2str(temp) +
+            std::string("C RH:") +
+            fl2str(hum) +
+            std::string("\nCO2:") +
+            fl2str(co2, "%0.0f") +
+            std::string(" PPM");
         
         lcd.printf(lcdtxt.c_str());
     }
@@ -182,36 +167,33 @@ void loop()
         lcd.printf("Collecting...");
     }
 
-    waitAndHandleButton(2500);
-
-    lcd.cls();
-    std::string lcdtxt = 
-        std::string("CO2: ") +
-        std::to_string(eco2) +
-        std::string(" ppm\n") +
-        std::string("TVOC: ") +
-        std::to_string(tvoc) +
-        std::string(" ppb");
-    
-    lcd.printf(lcdtxt.c_str());
-
     //wait 3 seconds before taking next sample
-    waitAndHandleButton(2500);
+    waitAndHandleButton(3000);
+}
+
+
+bool initSCD30()
+{
+    co2sensor.softReset();
+    // give sensor 2 seconds to reset
+    waitAndBlink50ms(40);
+
+    if(co2sensor.getSerialNumber() != SCD30::SCDnoERROR)
+        return false;
+
+    co2sensor.setMeasInterval(5);
+    co2sensor.startMeasurement(0);
+    return true;
 }
 
 
 int main()
 {
-    printf("STRT\n");
-
-    waitAndBlink50ms(20);
-
-    bool sensorOK = co2sensor.begin();
-
-    //give sensor 1 second to init
-    waitAndBlink50ms(20);
-
+    printf("START\n");
     lcd.setCursor(TextLCD::LCDCursor::CurOff_BlkOff);
+    lcd.printf("Sensor init...\n");
+
+    bool sensorOK = initSCD30();
 
     if(sensorOK == true) {
         while (true) 
